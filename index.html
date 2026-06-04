@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --sub-text: #757575;
+            --input-border: #cccccc;
+            --input-text: #555555;
+            --btn-bg: #e0e0e0;
+            --btn-hover: #d5d5d5;
+
+            --block-0: #e0e0e0;
+            --block-1: #ffd54f;
+            --block-2: #81c784;
+            --block-3: #8d6e63;
+            --block-4: #A9D9D5;
+
+            --leaf-color: rgba(76, 175, 80, 0.7);
+            --overlay-bg: transparent;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --sub-text: #aaaaaa;
+            --input-border: #444444;
+            --input-text: #e0e0e0;
+            --btn-bg: #333333;
+            --btn-hover: #4d4d4d;
+
+            --block-0: #333333;
+            --block-1: #d4a319;
+            --block-2: #4e9a51;
+            --block-3: #6a4a3e;
+            --block-4: #24A0BF;
+
+            --leaf-color: rgba(129, 199, 132, 0.6);
+            --overlay-bg: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
+        }
+
+        .controls-top {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .timer-container {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--sub-text);
+            z-index: 10;
+            transition: margin 0.3s;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            text-align: center;
+            color: var(--input-text);
+        }
+
+        button {
+            padding: 6px 14px;
+            background-color: var(--btn-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--btn-hover);
+        }
+
+        #restBtn {
+            background-color: #A9D9D5;
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] #restBtn {
+            background-color: #24A0BF;
+            color: #b3e5fc;
+        }
+
+        #displayTime {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-left: 5px;
+        }
+
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
+            width: 360px;
+            gap: 12px;
+            padding: 15px;
+            background: var(--container-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            min-height: 80px;
+            z-index: 10;
+            transition: background-color 0.3s, width 0.3s, padding 0.3s;
+        }
+
+        .block {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background-color: var(--block-0);
+            cursor: pointer;
+            transition: background-color 0.2s ease, border 0.2s ease;
+        }
+
+        .state-1 {
+            background-color: var(--block-1);
+        }
+
+        .state-2 {
+            background-color: var(--block-2);
+        }
+
+        .state-3 {
+            background-color: var(--block-3);
+        }
+
+        .state-4 {
+            background-color: var(--block-4);
+            cursor: default;
+        }
+
+        .state-5 {
+            background-color: transparent;
+            border: 2px dashed var(--block-1);
+            box-sizing: border-box;
+            cursor: default;
+        }
+
+        @media (max-width: 450px) or (max-height: 350px) {
+            .hide-on-small {
+                display: none !important;
+            }
+
+            .timer-container {
+                margin-bottom: 15px;
+            }
+
+            .grid {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .block {
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        #alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--overlay-bg);
+            z-index: 9999;
+            display: none;
+            pointer-events: none;
+        }
+
+        /* --- 系統視覺狀態切換：粒子系統 --- */
+
+        .particle {
+            position: absolute;
+            bottom: -40px;
+            /* 白天預設：樹葉狀態 */
+            width: 24px;
+            height: 24px;
+            background-color: var(--leaf-color);
+            border-radius: 50% 0 50% 0;
+            animation: leaf-rise ease-in infinite;
+        }
+
+        [data-theme="dark"] .particle {
+            /* 黑夜模式：無具象的螢火蟲光點 */
+            width: 5px;
+            height: 5px;
+            background-color: #e6ffb3;
+            /* 核心光源 */
+            border-radius: 50%;
+            /* 完美圓形 */
+            box-shadow: 0 0 10px 4px rgba(180, 255, 100, 0.4);
+            /* 光暈邊界 */
+            animation: firefly-rise ease-in-out infinite;
+        }
+
+        @keyframes leaf-rise {
+            0% {
+                transform: translateY(0) scale(var(--scale)) rotate(0deg);
+                opacity: 0;
+            }
+
+            15% {
+                opacity: 1;
+            }
+
+            75% {
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: translateY(-110vh) scale(var(--scale)) rotate(540deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes firefly-rise {
+            0% {
+                transform: translateY(0) translateX(0) scale(var(--scale));
+                opacity: 0;
+                box-shadow: 0 0 0px 0px rgba(180, 255, 100, 0);
+            }
+
+            20% {
+                opacity: var(--max-opacity, 1);
+                /* 光點亮起 */
+                box-shadow: 0 0 12px 4px rgba(180, 255, 100, 0.6);
+            }
+
+            50% {
+                opacity: 0.2;
+                /* 呼吸燈般的閃爍黯淡 */
+                transform: translateY(-50vh) translateX(var(--drift)) scale(var(--scale));
+                box-shadow: 0 0 2px 1px rgba(180, 255, 100, 0.2);
+            }
+
+            80% {
+                opacity: var(--max-opacity, 1);
+                /* 再次亮起 */
+                box-shadow: 0 0 12px 4px rgba(180, 255, 100, 0.6);
+            }
+
+            100% {
+                transform: translateY(-110vh) translateX(calc(var(--drift) * -1)) scale(var(--scale));
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="alert-overlay"></div>
+
+    <div class="controls-top hide-on-small">
+        <button id="themeToggle">Dark</button>
+    </div>
+
+    <div class="timer-container">
+        <label class="hide-on-small">timer:</label>
+        <input type="number" id="minutesInput" class="hide-on-small" value="20" min="1">
+
+        <button id="startBtn"><i class="fa-solid fa-play"></i></button>
+        <button id="restBtn"><i class="fa-solid fa-mug-hot"></i></button>
+        <button id="resetBtn"><i class="fa-solid fa-rotate-right"></i></button>
+        <div id="displayTime" class="hide-on-small">20:00</div>
+    </div>
+
+    <div class="grid" id="blockGrid"></div>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.body.getAttribute('data-theme') === 'dark') {
+                document.body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        const grid = document.getElementById('blockGrid');
+
+        function createNewBlock() {
+            const block = document.createElement('div');
+            block.className = 'block';
+            block.dataset.state = 0;
+            block.addEventListener('click', function () {
+                let currentState = parseInt(this.dataset.state);
+                if (currentState === 0 || currentState === 4 || currentState === 5) return;
+
+                if (currentState === 1 || currentState === 3) { currentState = 2; }
+                else if (currentState === 2) { currentState = 3; }
+                this.dataset.state = currentState;
+                this.className = 'block state-' + currentState;
+            });
+            grid.appendChild(block);
+        }
+
+        createNewBlock();
+
+        let timerInterval;
+        let titleFlashInterval;
+        let currentNotification = null;
+        let timeRemaining;
+        let isRunning = false;
+        let canDismiss = false;
+
+        const minutesInput = document.getElementById('minutesInput');
+        const displayTime = document.getElementById('displayTime');
+        const startBtn = document.getElementById('startBtn');
+        const restBtn = document.getElementById('restBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const alertOverlay = document.getElementById('alert-overlay');
+
+        function updateDisplay(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            displayTime.textContent = `${m}:${s}`;
+        }
+
+        minutesInput.addEventListener('change', () => {
+            if (!isRunning) updateDisplay(minutesInput.value * 60);
+        });
+
+        // 核心動態調整：依據時間與變數生成的粒子系統
+        function createParticles() {
+            alertOverlay.innerHTML = '';
+            const count = 60;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = (Math.random() * 100) + '%';
+                p.style.setProperty('--scale', Math.random() * 0.5 + 0.5);
+
+                // 導入橫向漂移的混亂度，讓螢火蟲不規則浮動
+                p.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+                // 導入亮度上限，模擬遠近不一的光點層次
+                p.style.setProperty('--max-opacity', Math.random() * 0.6 + 0.4);
+
+                p.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                p.style.animationDelay = (Math.random() * 2) + 's';
+                alertOverlay.appendChild(p);
+            }
+        }
+
+        function triggerExternalAlert() {
+            if (window.Notification && Notification.permission === "granted") {
+                if (currentNotification) { currentNotification.close(); }
+                currentNotification = new Notification("時間到", {
+                    body: "請上色。",
+                    requireInteraction: true
+                });
+                currentNotification.onclick = function () {
+                    window.focus();
+                    dismissBreakAlert();
+                };
+            }
+            clearInterval(titleFlashInterval);
+            let isFlip = false;
+            titleFlashInterval = setInterval(() => {
+                document.title = isFlip ? "🔔 時間到！" : "請結算";
+                isFlip = !isFlip;
+            }, 500);
+        }
+
+        function triggerBreakAlert() {
+            canDismiss = false;
+            alertOverlay.style.display = 'block';
+            alertOverlay.style.pointerEvents = 'auto';
+            createParticles(); // 呼叫更新後的粒子函數
+            triggerExternalAlert();
+            setTimeout(() => { canDismiss = true; }, 1200);
+        }
+
+        function dismissBreakAlert() {
+            if (!canDismiss) return;
+            alertOverlay.style.display = 'none';
+            alertOverlay.style.pointerEvents = 'none';
+            alertOverlay.innerHTML = '';
+            clearInterval(titleFlashInterval);
+            document.title = "timer";
+            if (currentNotification) {
+                currentNotification.close();
+                currentNotification = null;
+            }
+        }
+
+        document.addEventListener('mousemove', dismissBreakAlert);
+        document.addEventListener('click', dismissBreakAlert);
+        window.addEventListener('focus', dismissBreakAlert);
+
+        startBtn.addEventListener('click', () => {
+            if (isRunning) return;
+            if (window.Notification && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+            isRunning = true;
+
+            const allBlocks = document.querySelectorAll('.block');
+            const lastBlock = allBlocks[allBlocks.length - 1];
+            if (parseInt(lastBlock.dataset.state) === 0) {
+                lastBlock.dataset.state = 1;
+                lastBlock.className = 'block state-1';
+            }
+
+            if (!timeRemaining) timeRemaining = minutesInput.value * 60;
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateDisplay(timeRemaining);
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    timeRemaining = null;
+                    updateDisplay(minutesInput.value * 60);
+                    createNewBlock();
+                    triggerBreakAlert();
+                }
+            }, 1000);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timeRemaining = minutesInput.value * 60;
+            updateDisplay(timeRemaining);
+            canDismiss = true;
+            dismissBreakAlert();
+
+            const allBlocks = document.querySelectorAll('.block');
+            const lastBlock = allBlocks[allBlocks.length - 1];
+            if (lastBlock && parseInt(lastBlock.dataset.state) === 1) {
+                lastBlock.dataset.state = 0;
+                lastBlock.className = 'block state-0';
+            }
+        });
+
+        restBtn.addEventListener('click', () => {
+            const allBlocks = document.querySelectorAll('.block');
+            const lastBlock = allBlocks[allBlocks.length - 1];
+            const NOISE_THRESHOLD = 300;
+
+            if (isRunning && lastBlock && parseInt(lastBlock.dataset.state) === 1) {
+                const totalSeconds = minutesInput.value * 60;
+                const elapsedSeconds = totalSeconds - timeRemaining;
+
+                clearInterval(timerInterval);
+                isRunning = false;
+                timeRemaining = totalSeconds;
+                updateDisplay(timeRemaining);
+
+                if (elapsedSeconds < NOISE_THRESHOLD) {
+                    lastBlock.dataset.state = 0;
+                    lastBlock.className = 'block state-0';
+                } else {
+                    lastBlock.dataset.state = 5;
+                    lastBlock.className = 'block state-5';
+                }
+            }
+
+            const blueBlock = document.createElement('div');
+            blueBlock.className = 'block state-4';
+            blueBlock.dataset.state = 4;
+
+            const currentBlocks = document.querySelectorAll('.block');
+            const currentLastBlock = currentBlocks[currentBlocks.length - 1];
+            const currentState = parseInt(currentLastBlock.dataset.state);
+
+            if (currentState === 0) {
+                grid.insertBefore(blueBlock, currentLastBlock);
+            } else {
+                grid.appendChild(blueBlock);
+                createNewBlock();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
