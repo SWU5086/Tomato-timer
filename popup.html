@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --sub-text: #757575;
+            --input-border: #cccccc;
+            --input-text: #555555;
+            --btn-bg: #e0e0e0;
+            --btn-hover: #d5d5d5;
+            --block-0: #e0e0e0;
+            --block-1: #ffd54f;
+            --block-2: #81c784;
+            --block-3: #8d6e63;
+            --block-4: #A9D9D5;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --sub-text: #aaaaaa;
+            --input-border: #444444;
+            --input-text: #e0e0e0;
+            --btn-bg: #333333;
+            --btn-hover: #4d4d4d;
+            --block-0: #333333;
+            --block-1: #d4a319;
+            --block-2: #4e9a51;
+            --block-3: #6a4a3e;
+            --block-4: #24A0BF;
+        }
+
+        body {
+            width: 380px;
+            min-height: 200px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        .controls-top {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            background: var(--container-bg);
+            border: 1px solid var(--input-border);
+            color: var(--input-text);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        button {
+            padding: 6px 14px;
+            background: var(--btn-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--btn-hover);
+        }
+
+        #restBtn {
+            background-color: var(--block-4);
+            color: #fff;
+        }
+
+        #displayTime {
+            font-size: 22px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: var(--container-bg);
+            padding: 15px;
+            border-radius: 12px;
+            min-height: 50px;
+        }
+
+        .block {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            background-color: var(--block-0);
+            cursor: pointer;
+        }
+
+        .state-1 {
+            background-color: var(--block-1);
+        }
+
+        .state-2 {
+            background-color: var(--block-2);
+        }
+
+        .state-3 {
+            background-color: var(--block-3);
+        }
+
+        .state-4 {
+            background-color: var(--block-4);
+            cursor: default;
+        }
+
+        .state-5 {
+            background-color: transparent;
+            border: 2px dashed var(--block-1);
+            box-sizing: border-box;
+            cursor: default;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls-top">
+        <button id="themeToggle">🌓</button>
+    </div>
+    <div class="timer-container">
+        <input type="number" id="minutesInput" value="20" min="1">
+        <button id="startBtn" title="開始">▶</button>
+        <button id="restBtn" title="休息">☕</button>
+        <button id="resetBtn" title="重置當前計時">🔄</button>
+        <button id="clearBtn" title="清空所有方塊">🗑️</button>
+        <button id="pinBtn" title="呼叫懸浮窗">📌</button>
+        <div id="displayTime">20:00</div>
+    </div>
+    <div class="grid" id="blockGrid"></div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
