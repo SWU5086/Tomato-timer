@@ -167,23 +167,57 @@
             cursor: default;
         }
 
+        /* --- 核心結構修改：小視窗微型控制台 --- */
         @media (max-width: 450px) or (max-height: 350px) {
             .hide-on-small {
                 display: none !important;
             }
 
+            body {
+                gap: 20px;
+                /* 拉開上下區域的距離 */
+            }
+
             .timer-container {
-                margin-bottom: 15px;
+                margin-bottom: 0;
+                order: 2;
+                /* 將按鈕列排序到下方 */
+                gap: 15px;
             }
 
             .grid {
-                padding: 10px;
-                gap: 8px;
+                order: 1;
+                /* 將方格排序到上方 */
+                padding: 0;
+                width: auto;
+                background: transparent;
+                /* 移除白色底板，融入系統背景 */
+                box-shadow: none;
+                min-height: auto;
+                gap: 15px;
             }
 
+            /* 視野遮蔽：隱藏倒數第三個(含)以前的所有方格，只留當前與前一格 */
+            .grid .block:nth-last-child(n+3) {
+                display: none !important;
+            }
+
+            /* 放大核心元素，增加操作的物理回饋感 */
             .block {
-                width: 45px;
-                height: 45px;
+                width: 65px;
+                height: 65px;
+                border-radius: 14px;
+            }
+
+            button {
+                width: 55px;
+                height: 55px;
+                padding: 0;
+                font-size: 22px;
+                border-radius: 14px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
             }
         }
 
@@ -199,12 +233,9 @@
             pointer-events: none;
         }
 
-        /* --- 系統視覺狀態切換：粒子系統 --- */
-
         .particle {
             position: absolute;
             bottom: -40px;
-            /* 白天預設：樹葉狀態 */
             width: 24px;
             height: 24px;
             background-color: var(--leaf-color);
@@ -213,15 +244,11 @@
         }
 
         [data-theme="dark"] .particle {
-            /* 黑夜模式：無具象的螢火蟲光點 */
-            width: 5px;
-            height: 5px;
+            width: 6px;
+            height: 6px;
             background-color: #e6ffb3;
-            /* 核心光源 */
             border-radius: 50%;
-            /* 完美圓形 */
-            box-shadow: 0 0 10px 4px rgba(180, 255, 100, 0.4);
-            /* 光暈邊界 */
+            box-shadow: 0 0 12px 4px rgba(180, 255, 100, 0.6);
             animation: firefly-rise ease-in-out infinite;
         }
 
@@ -252,27 +279,24 @@
                 box-shadow: 0 0 0px 0px rgba(180, 255, 100, 0);
             }
 
-            20% {
+            25% {
                 opacity: var(--max-opacity, 1);
-                /* 光點亮起 */
                 box-shadow: 0 0 12px 4px rgba(180, 255, 100, 0.6);
             }
 
             50% {
                 opacity: 0.2;
-                /* 呼吸燈般的閃爍黯淡 */
-                transform: translateY(-50vh) translateX(var(--drift)) scale(var(--scale));
+                transform: translateY(-35vh) translateX(var(--drift)) scale(var(--scale));
                 box-shadow: 0 0 2px 1px rgba(180, 255, 100, 0.2);
             }
 
-            80% {
+            75% {
                 opacity: var(--max-opacity, 1);
-                /* 再次亮起 */
                 box-shadow: 0 0 12px 4px rgba(180, 255, 100, 0.6);
             }
 
             100% {
-                transform: translateY(-110vh) translateX(calc(var(--drift) * -1)) scale(var(--scale));
+                transform: translateY(-75vh) translateX(calc(var(--drift) * -0.5)) scale(var(--scale));
                 opacity: 0;
             }
         }
@@ -359,23 +383,20 @@
             if (!isRunning) updateDisplay(minutesInput.value * 60);
         });
 
-        // 核心動態調整：依據時間與變數生成的粒子系統
         function createParticles() {
             alertOverlay.innerHTML = '';
-            const count = 60;
+            const count = 45;
             for (let i = 0; i < count; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
                 p.style.left = (Math.random() * 100) + '%';
-                p.style.setProperty('--scale', Math.random() * 0.5 + 0.5);
+                p.style.setProperty('--scale', Math.random() * 0.4 + 0.6);
 
-                // 導入橫向漂移的混亂度，讓螢火蟲不規則浮動
-                p.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
-                // 導入亮度上限，模擬遠近不一的光點層次
+                p.style.setProperty('--drift', (Math.random() * 160 - 80) + 'px');
                 p.style.setProperty('--max-opacity', Math.random() * 0.6 + 0.4);
 
-                p.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                p.style.animationDelay = (Math.random() * 2) + 's';
+                p.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                p.style.animationDelay = (Math.random() * 3) + 's';
                 alertOverlay.appendChild(p);
             }
         }
@@ -404,7 +425,7 @@
             canDismiss = false;
             alertOverlay.style.display = 'block';
             alertOverlay.style.pointerEvents = 'auto';
-            createParticles(); // 呼叫更新後的粒子函數
+            createParticles();
             triggerExternalAlert();
             setTimeout(() => { canDismiss = true; }, 1200);
         }
