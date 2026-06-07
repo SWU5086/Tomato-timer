@@ -4,6 +4,7 @@
 <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta charset="UTF-8">
+    <title>timer</title>
     <style>
         :root {
             --bg-color: #f5f5f5;
@@ -14,13 +15,11 @@
             --input-text: #555555;
             --btn-bg: #e0e0e0;
             --btn-hover: #d5d5d5;
-
             --block-0: #e0e0e0;
             --block-1: #ffd54f;
             --block-2: #81c784;
             --block-3: #8d6e63;
             --block-4: #A9D9D5;
-
             --leaf-color: rgba(76, 175, 80, 0.7);
             --overlay-bg: transparent;
         }
@@ -34,15 +33,12 @@
             --input-text: #e0e0e0;
             --btn-bg: #333333;
             --btn-hover: #4d4d4d;
-
             --block-0: #333333;
             --block-1: #d4a319;
             --block-2: #4e9a51;
             --block-3: #6a4a3e;
             --block-4: #24A0BF;
-
             --leaf-color: rgba(129, 199, 132, 0.6);
-            --overlay-bg: transparent;
         }
 
         body {
@@ -57,6 +53,7 @@
             font-family: sans-serif;
             transition: background-color 0.3s, color 0.3s;
             overflow: hidden;
+            padding: 10px 8px;
         }
 
         .controls-top {
@@ -64,6 +61,8 @@
             top: 20px;
             right: 20px;
             z-index: 10;
+            display: flex;
+            gap: 10px;
         }
 
         .timer-container {
@@ -93,7 +92,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s;
+            transition: background-color 0.2s;
         }
 
         button:hover {
@@ -101,13 +100,8 @@
         }
 
         #restBtn {
-            background-color: #A9D9D5;
+            background-color: var(--block-4);
             color: #ffffff;
-        }
-
-        [data-theme="dark"] #restBtn {
-            background-color: #24A0BF;
-            color: #b3e5fc;
         }
 
         #displayTime {
@@ -131,7 +125,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             min-height: 80px;
             z-index: 10;
-            transition: background-color 0.3s, width 0.3s, padding 0.3s;
+            transition: all 0.3s;
         }
 
         .block {
@@ -165,60 +159,6 @@
             border: 2px dashed var(--block-1);
             box-sizing: border-box;
             cursor: default;
-        }
-
-        /* --- 核心結構修改：小視窗微型控制台 --- */
-        @media (max-width: 450px) or (max-height: 350px) {
-            .hide-on-small {
-                display: none !important;
-            }
-
-            body {
-                gap: 20px;
-                /* 拉開上下區域的距離 */
-            }
-
-            .timer-container {
-                margin-bottom: 0;
-                order: 2;
-                /* 將按鈕列排序到下方 */
-                gap: 15px;
-            }
-
-            .grid {
-                order: 1;
-                /* 將方格排序到上方 */
-                padding: 0;
-                width: auto;
-                background: transparent;
-                /* 移除白色底板，融入系統背景 */
-                box-shadow: none;
-                min-height: auto;
-                gap: 15px;
-            }
-
-            /* 視野遮蔽：隱藏倒數第三個(含)以前的所有方格，只留當前與前一格 */
-            .grid .block:nth-last-child(n+3) {
-                display: none !important;
-            }
-
-            /* 放大核心元素，增加操作的物理回饋感 */
-            .block {
-                width: 65px;
-                height: 65px;
-                border-radius: 14px;
-            }
-
-            button {
-                width: 55px;
-                height: 55px;
-                padding: 0;
-                font-size: 22px;
-                border-radius: 14px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
         }
 
         #alert-overlay {
@@ -304,30 +244,29 @@
 </head>
 
 <body>
-
     <div id="alert-overlay"></div>
 
-    <div class="controls-top hide-on-small">
+    <div class="controls-top">
         <button id="themeToggle">Dark</button>
+        <button id="pipBtn"><i class="fa-solid fa-compress"></i></button>
     </div>
 
     <div class="timer-container">
-        <label class="hide-on-small">timer:</label>
-        <input type="number" id="minutesInput" class="hide-on-small" value="20" min="1">
-
+        <label>timer:</label>
+        <input type="number" id="minutesInput" value="20" min="1">
         <button id="startBtn"><i class="fa-solid fa-play"></i></button>
         <button id="restBtn"><i class="fa-solid fa-mug-hot"></i></button>
         <button id="resetBtn"><i class="fa-solid fa-rotate-right"></i></button>
-        <div id="displayTime" class="hide-on-small">20:00</div>
+
+        <div id="displayTime">20:00</div>
     </div>
 
     <div class="grid" id="blockGrid"></div>
 
     <script>
+        // --- 核心系統與狀態管理 ---
         const themeToggle = document.getElementById('themeToggle');
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.setAttribute('data-theme', 'dark');
-        }
+        if (localStorage.getItem('theme') === 'dark') document.body.setAttribute('data-theme', 'dark');
 
         themeToggle.addEventListener('click', () => {
             if (document.body.getAttribute('data-theme') === 'dark') {
@@ -337,34 +276,13 @@
                 document.body.setAttribute('data-theme', 'dark');
                 localStorage.setItem('theme', 'dark');
             }
+            syncToPip();
         });
 
         const grid = document.getElementById('blockGrid');
-
-        function createNewBlock() {
-            const block = document.createElement('div');
-            block.className = 'block';
-            block.dataset.state = 0;
-            block.addEventListener('click', function () {
-                let currentState = parseInt(this.dataset.state);
-                if (currentState === 0 || currentState === 4 || currentState === 5) return;
-
-                if (currentState === 1 || currentState === 3) { currentState = 2; }
-                else if (currentState === 2) { currentState = 3; }
-                this.dataset.state = currentState;
-                this.className = 'block state-' + currentState;
-            });
-            grid.appendChild(block);
-        }
-
-        createNewBlock();
-
-        let timerInterval;
-        let titleFlashInterval;
-        let currentNotification = null;
-        let timeRemaining;
-        let isRunning = false;
-        let canDismiss = false;
+        let timerInterval, titleFlashInterval, currentNotification = null;
+        let timeRemaining, isRunning = false, canDismiss = false;
+        let pipWindow = null;
 
         const minutesInput = document.getElementById('minutesInput');
         const displayTime = document.getElementById('displayTime');
@@ -373,52 +291,65 @@
         const resetBtn = document.getElementById('resetBtn');
         const alertOverlay = document.getElementById('alert-overlay');
 
+        function createNewBlock() {
+            const block = document.createElement('div');
+            block.className = 'block';
+            block.dataset.state = 0;
+            block.addEventListener('click', function () {
+                let currentState = parseInt(this.dataset.state);
+                if (currentState === 0 || currentState === 4 || currentState === 5) return;
+                if (currentState === 1 || currentState === 3) currentState = 2;
+                else if (currentState === 2) currentState = 3;
+                this.dataset.state = currentState;
+                this.className = 'block state-' + currentState;
+                syncToPip();
+            });
+            grid.appendChild(block);
+            syncToPip();
+        }
+        createNewBlock();
+
         function updateDisplay(seconds) {
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
             displayTime.textContent = `${m}:${s}`;
+            syncToPip();
         }
 
-        minutesInput.addEventListener('change', () => {
-            if (!isRunning) updateDisplay(minutesInput.value * 60);
-        });
+        minutesInput.addEventListener('change', () => { if (!isRunning) updateDisplay(minutesInput.value * 60); });
 
+        let isTimeVisible = true;
+
+        // 在全域環境綁定雙擊感測器
+        document.addEventListener('dblclick', (e) => {
+            // 系統防衛機制：如果是雙擊在按鈕、圖示、輸入框或方格上，則阻斷訊號
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.classList.contains('block')) {
+                return;
+            }
+
+            // 翻轉狀態
+            isTimeVisible = !isTimeVisible;
+
+            // 控制大視窗的視覺穿透度，保留物理佔位避免排版跳動
+            displayTime.style.visibility = isTimeVisible ? 'visible' : 'hidden';
+
+            syncToPip(); // 同步狀態
+        });
+        // --- 動畫與警報系統 ---
         function createParticles() {
             alertOverlay.innerHTML = '';
-            const count = 45;
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < 45; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
                 p.style.left = (Math.random() * 100) + '%';
                 p.style.setProperty('--scale', Math.random() * 0.4 + 0.6);
-
                 p.style.setProperty('--drift', (Math.random() * 160 - 80) + 'px');
                 p.style.setProperty('--max-opacity', Math.random() * 0.6 + 0.4);
-
                 p.style.animationDuration = (Math.random() * 3 + 4) + 's';
                 p.style.animationDelay = (Math.random() * 3) + 's';
                 alertOverlay.appendChild(p);
             }
-        }
-
-        function triggerExternalAlert() {
-            if (window.Notification && Notification.permission === "granted") {
-                if (currentNotification) { currentNotification.close(); }
-                currentNotification = new Notification("時間到", {
-                    body: "請上色。",
-                    requireInteraction: true
-                });
-                currentNotification.onclick = function () {
-                    window.focus();
-                    dismissBreakAlert();
-                };
-            }
-            clearInterval(titleFlashInterval);
-            let isFlip = false;
-            titleFlashInterval = setInterval(() => {
-                document.title = isFlip ? "🔔 時間到！" : "請結算";
-                isFlip = !isFlip;
-            }, 500);
+            syncToPip();
         }
 
         function triggerBreakAlert() {
@@ -426,8 +357,18 @@
             alertOverlay.style.display = 'block';
             alertOverlay.style.pointerEvents = 'auto';
             createParticles();
-            triggerExternalAlert();
+
+            if (window.Notification && Notification.permission === "granted") {
+                if (currentNotification) currentNotification.close();
+                currentNotification = new Notification("時間到", { body: "請上色。", requireInteraction: true });
+                currentNotification.onclick = function () { window.focus(); dismissBreakAlert(); };
+            }
+            clearInterval(titleFlashInterval);
+            let isFlip = false;
+            titleFlashInterval = setInterval(() => { document.title = isFlip ? "🔔 時間到！" : "請結算"; isFlip = !isFlip; }, 500);
+
             setTimeout(() => { canDismiss = true; }, 1200);
+            syncToPip();
         }
 
         function dismissBreakAlert() {
@@ -437,24 +378,21 @@
             alertOverlay.innerHTML = '';
             clearInterval(titleFlashInterval);
             document.title = "timer";
-            if (currentNotification) {
-                currentNotification.close();
-                currentNotification = null;
-            }
+            if (currentNotification) { currentNotification.close(); currentNotification = null; }
+            syncToPip();
         }
 
         document.addEventListener('mousemove', dismissBreakAlert);
         document.addEventListener('click', dismissBreakAlert);
         window.addEventListener('focus', dismissBreakAlert);
 
+        // --- 計時器按鈕邏輯 ---
         startBtn.addEventListener('click', () => {
             if (isRunning) return;
-            if (window.Notification && Notification.permission === "default") {
-                Notification.requestPermission();
-            }
+            if (window.Notification && Notification.permission === "default") Notification.requestPermission();
             isRunning = true;
 
-            const allBlocks = document.querySelectorAll('.block');
+            const allBlocks = grid.querySelectorAll('.block');
             const lastBlock = allBlocks[allBlocks.length - 1];
             if (parseInt(lastBlock.dataset.state) === 0) {
                 lastBlock.dataset.state = 1;
@@ -466,7 +404,6 @@
             timerInterval = setInterval(() => {
                 timeRemaining--;
                 updateDisplay(timeRemaining);
-
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     isRunning = false;
@@ -476,6 +413,7 @@
                     triggerBreakAlert();
                 }
             }, 1000);
+            syncToPip();
         });
 
         resetBtn.addEventListener('click', () => {
@@ -486,54 +424,118 @@
             canDismiss = true;
             dismissBreakAlert();
 
-            const allBlocks = document.querySelectorAll('.block');
+            const allBlocks = grid.querySelectorAll('.block');
             const lastBlock = allBlocks[allBlocks.length - 1];
             if (lastBlock && parseInt(lastBlock.dataset.state) === 1) {
                 lastBlock.dataset.state = 0;
                 lastBlock.className = 'block state-0';
             }
+            syncToPip();
         });
 
         restBtn.addEventListener('click', () => {
-            const allBlocks = document.querySelectorAll('.block');
+            const allBlocks = grid.querySelectorAll('.block');
             const lastBlock = allBlocks[allBlocks.length - 1];
-            const NOISE_THRESHOLD = 300;
-
             if (isRunning && lastBlock && parseInt(lastBlock.dataset.state) === 1) {
                 const totalSeconds = minutesInput.value * 60;
-                const elapsedSeconds = totalSeconds - timeRemaining;
-
-                clearInterval(timerInterval);
-                isRunning = false;
-                timeRemaining = totalSeconds;
-                updateDisplay(timeRemaining);
-
-                if (elapsedSeconds < NOISE_THRESHOLD) {
+                if (totalSeconds - timeRemaining < 300) {
                     lastBlock.dataset.state = 0;
                     lastBlock.className = 'block state-0';
                 } else {
                     lastBlock.dataset.state = 5;
                     lastBlock.className = 'block state-5';
                 }
+                clearInterval(timerInterval);
+                isRunning = false;
+                timeRemaining = totalSeconds;
+                updateDisplay(timeRemaining);
             }
 
             const blueBlock = document.createElement('div');
             blueBlock.className = 'block state-4';
             blueBlock.dataset.state = 4;
+            const currentState = parseInt(grid.querySelectorAll('.block')[grid.querySelectorAll('.block').length - 1].dataset.state);
 
-            const currentBlocks = document.querySelectorAll('.block');
-            const currentLastBlock = currentBlocks[currentBlocks.length - 1];
-            const currentState = parseInt(currentLastBlock.dataset.state);
+            if (currentState === 0) grid.insertBefore(blueBlock, grid.lastElementChild);
+            else { grid.appendChild(blueBlock); createNewBlock(); }
+            syncToPip();
+        });
 
-            if (currentState === 0) {
-                grid.insertBefore(blueBlock, currentLastBlock);
-            } else {
-                grid.appendChild(blueBlock);
-                createNewBlock();
+        // ================= 核心鏡像控制樞紐 (PiP System) =================
+        function syncToPip() {
+            if (!pipWindow) return;
+            if (document.body.getAttribute('data-theme') === 'dark') pipWindow.document.body.setAttribute('data-theme', 'dark');
+            else pipWindow.document.body.removeAttribute('data-theme');
+
+            pipWindow.document.getElementById('displayTime').textContent = displayTime.textContent;
+            pipWindow.document.getElementById('blockGrid').innerHTML = grid.innerHTML;
+
+            const pipOverlay = pipWindow.document.getElementById('alert-overlay');
+            pipOverlay.style.display = alertOverlay.style.display;
+            pipOverlay.style.pointerEvents = alertOverlay.style.pointerEvents;
+            pipOverlay.innerHTML = alertOverlay.innerHTML;
+        }
+
+        document.getElementById('pipBtn').addEventListener('click', async () => {
+            if (!('documentPictureInPicture' in window)) { alert('你的瀏覽器不支援 Document PiP 功能。'); return; }
+
+            // 啟動小視窗
+            pipWindow = await documentPictureInPicture.requestWindow({ width: 80, height: 50 });
+
+            // 拷貝主樣式
+            pipWindow.document.head.innerHTML = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">`;
+            const style = document.createElement('style');
+            for (let sheet of document.styleSheets) {
+                try { if (!sheet.href) style.textContent += [...sheet.cssRules].map(r => r.cssText).join(''); } catch (e) { }
             }
+            pipWindow.document.head.appendChild(style);
+
+            // 關鍵排版覆寫：同步色調變數、強制並排方格、徹底屏蔽時間與輸入框視覺節點
+            pipWindow.document.head.insertAdjacentHTML('beforeend', `
+                <style>
+                    body { justify-content: flex-start; gap: 15px; background-color: var(--bg-color); padding-top: 25px;}
+                    .timer-container { transform: scale(0.9); transform-origin: top center; flex-wrap: wrap; justify-content: center; margin-bottom: 0;margin-top: -25px;}
+                    .timer-container label, .timer-container input, #displayTime { display: none !important; } /* 隱藏時間倒數 */
+                    .grid { width: 120px !important; flex-direction: row; padding: 0; background: transparent; box-shadow: none; gap: 15px; }
+                    .grid .block:nth-last-child(n+3) { display: none !important; }
+                    button { width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; border-radius: 12px; font-size: 18px;}
+                </style>
+            `);
+
+            // 建立小視窗影子結構
+            pipWindow.document.body.innerHTML = `
+                <div id="alert-overlay"></div>
+                <div class="grid" id="blockGrid"></div>
+                <div class="timer-container">
+                    <button id="pip_startBtn"><i class="fa-solid fa-play"></i></button>
+                    <button id="pip_restBtn"><i class="fa-solid fa-mug-hot"></i></button>
+                    <button id="pip_resetBtn"><i class="fa-solid fa-rotate-right"></i></button>
+                    <div id="displayTime" style="display:none;">00:00</div>
+                </div>
+            `;
+
+            // 綁定遠端控制開關 (訊號代理)
+            pipWindow.document.getElementById('pip_startBtn').addEventListener('click', () => startBtn.click());
+            pipWindow.document.getElementById('pip_restBtn').addEventListener('click', () => restBtn.click());
+            pipWindow.document.getElementById('pip_resetBtn').addEventListener('click', () => resetBtn.click());
+
+            pipWindow.document.getElementById('blockGrid').addEventListener('click', (e) => {
+                if (e.target.classList.contains('block')) {
+                    const index = Array.from(pipWindow.document.querySelectorAll('#blockGrid .block')).indexOf(e.target);
+                    const targetBlock = grid.querySelectorAll('.block')[index];
+                    if (targetBlock) targetBlock.click();
+                }
+            });
+
+            // 綁定小視窗的感測器來關閉警報動畫
+            pipWindow.document.addEventListener('mousemove', dismissBreakAlert);
+            pipWindow.document.addEventListener('click', dismissBreakAlert);
+            pipWindow.addEventListener('focus', dismissBreakAlert);
+
+            syncToPip();
+            pipWindow.addEventListener('pagehide', () => { pipWindow = null; });
         });
     </script>
-
 </body>
 
 </html>
